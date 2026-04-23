@@ -108,30 +108,37 @@ Print["chi^2 = ", NumberForm[chi2, {6, 2}], "  (dof=", dof, ")"];
 Print["p-value (larger = better fit) = ",
       NumberForm[SurvivalFunction[ChiSquareDistribution[dof], chi2], {5, 3}]];
 
-(* Plot: empirical histogram vs binomial PMF (scaled) vs Normal curve *)
-centers = GaltonBoard`BinCenters[];
+(* Plot: empirical histogram vs binomial PMF (scaled) vs Normal curve.
+   Build the bar chart from Rectangle primitives to avoid BarChart's
+   idiosyncratic option handling inside Show[]. *)
+centers    = GaltonBoard`BinCenters[];
 empDensity = bins11 / N[nTrials];
-empBars = BarChart[empDensity,
-          ChartLabels -> Placed[Range[Length[empDensity]], Axis],
-          ChartStyle -> RGBColor[0.4, 0.6, 0.9],
-          AxesLabel -> {"bin index", "frequency"},
-          PlotLabel -> Row[{"Empirical distribution of final bin, n = ", nTrials}],
-          ImageSize -> 700];
+yMax       = 1.15 * Max[empDensity, binomPMF];
+barsGraphics = Graphics[{
+  Opacity[0.55], RGBColor[0.35, 0.55, 0.85],
+  Table[Rectangle[{k - 0.45, 0}, {k + 0.45, empDensity[[k]]}], {k, 1, N0 + 1}]
+}];
+empBars = Show[barsGraphics,
+            Frame -> True, Axes -> False,
+            FrameLabel -> {"bin index", "frequency"},
+            PlotLabel -> Row[{"Empirical distribution of final bin, n = ", nTrials}],
+            PlotRange -> {{0.3, N0 + 1.7}, {0, yMax}},
+            ImageSize -> 720, AspectRatio -> 0.6];
 
 mu    = (N0 + 2) / 2.;                (* central bin index for a symmetric walk *)
 sigma = Sqrt[N0] / 2.;                (* stdev of the binomial in bin-index units *)
 overlay = Show[
-  BarChart[empDensity, ChartLayout -> "Row",
-     ChartStyle -> Opacity[0.6, RGBColor[0.4, 0.6, 0.9]],
-     AxesOrigin -> {0, 0}, Frame -> True,
-     FrameLabel -> {"bin index", "density"},
-     PlotLabel -> Row[{"Empirical (bars) vs Binomial (green \[FilledCircle]) vs Normal (red dashed)  --  ",
-                       nTrials, " balls, ", N0, " rows"}]],
+  barsGraphics,
   Plot[PDF[NormalDistribution[mu, sigma], x], {x, 0.5, N0 + 1.5},
      PlotStyle -> Directive[Red, Thick, Dashed]],
   ListPlot[Table[{k + 1, binomPMF[[k + 1]]}, {k, 0, N0}],
-     PlotStyle -> Directive[PointSize[0.015], Darker@Green]],
-  ImageSize -> 900, PlotRange -> {{0.5, N0 + 1.5}, {0, 1.1*Max[empDensity, binomPMF]}}];
+     PlotStyle -> Directive[PointSize[0.015], Darker@Green], Joined -> False],
+  Frame -> True, Axes -> False,
+  FrameLabel -> {"bin index", "density"},
+  PlotLabel -> Row[{"Empirical (blue bars), Binomial(10,\[VeryThinSpace]1/2) (green \[FilledCircle]),  Normal PDF (red dashed)  \[LongDash]  ",
+                    nTrials, " trials"}],
+  PlotRange -> {{0.3, N0 + 1.7}, {0, yMax}},
+  ImageSize -> 900, AspectRatio -> 0.55];
 
 outDir = FileNameJoin[{DirectoryName[$InputFileName, 2], "output"}];
 Export[FileNameJoin[{outDir, "03_histogram.png"}], empBars];
