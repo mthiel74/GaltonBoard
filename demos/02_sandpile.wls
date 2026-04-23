@@ -25,11 +25,12 @@ SeedRandom[2];
 
 (* -- Parameters -- *)
 ballR     = 0.025;
-nBalls    = 400;          (* per friction panel *)
+nBalls    = 250;          (* per friction panel *)
 floorHalf = 0.80;         (* floor half-width *)
-dropZ     = 0.80;         (* height balls rain from *)
-dropXHalf = 0.02;         (* very narrow release column *)
-dzStack   = 0.06;         (* ~ ball diameter: balls stacked tightly *)
+dropZ     = 0.30;         (* low release height -> gentle impact *)
+dropXHalf = 0.015;        (* very narrow release column *)
+dzStack   = 0.06;
+gSlow     = 3.0;          (* lower gravity -> slow rain, balls pile nicely *)
 
 (* -- Run a single experiment with a given friction coefficient -- *)
 runOne[friction_, label_String] := Module[
@@ -60,7 +61,7 @@ runOne[friction_, label_String] := Module[
 
   model = CreatePhysicsModel[
     Join[balls, {floor}, bbox],
-    "Gravity" -> {0., 0., -9.81},
+    "Gravity" -> {0., 0., -gSlow},
     "Graphics3DOptions" -> {
       PlotRange    -> {{-floorHalf, floorHalf},
                        {-floorHalf, floorHalf},

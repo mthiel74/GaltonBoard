@@ -62,18 +62,36 @@ makeDomino[{r_, theta_}, color_] := Module[
 dominoes = MapIndexed[
   makeDomino[#1, Hue[Mod[0.015 First[#2], 1]]] &, pts];
 
+(* -- Give the first domino a forward tilt so gravity tips it at t=0 -- *)
+tiltFirst[DynamicBody[prim_List, opts___]] := Module[
+  {origRot, tilt, newRot, r, theta, tx, ty},
+  r = pts[[1, 1]]; theta = pts[[1, 2]];
+  tx = bSpiral Cos[theta] - r Sin[theta];
+  ty = bSpiral Sin[theta] + r Cos[theta];
+  With[{n = Sqrt[tx^2 + ty^2]}, tx /= n; ty /= n];
+  origRot = "Orientation" /. {opts} /. {"Orientation" -> IdentityMatrix[3]};
+  (* tilt about the outward-normal (local Y in world = (-ty, tx, 0)) *)
+  tilt = RotationMatrix[25 Degree, {-ty, tx, 0}];
+  newRot = tilt . origRot;
+  DynamicBody[prim, Sequence @@ DeleteCases[{opts}, _ -> _?MatchQ["Orientation" -> _]],
+    "Orientation" -> newRot]];
+dominoes[[1]] = tiltFirst[dominoes[[1]]];
+
 (* -- Projectile: a ball dropped onto the first domino -- *)
 firstR      = pts[[1, 1]];
 firstTheta  = pts[[1, 2]];
 projX       = firstR Cos[firstTheta];
 projY       = firstR Sin[firstTheta];
+(* place the projectile far above so it arrives after the first domino
+   has fallen; a pure visual cue that something is dropping in.  The
+   tilt on domino 0 is what actually triggers the cascade. *)
 projectile  = DynamicBody[
   {RGBColor[0.85, 0.1, 0.1],
-   Sphere[{projX, projY, 6 dTal}, 0.06]},
-  "Density"     -> 3.0,
+   Sphere[{projX, projY, 0.60}, 0.04]},
+  "Density"     -> 2.0,
   "Restitution" -> 0.1,
   "Friction"    -> 0.7,
-  "Velocity"    -> {0., 0., -3.0}];
+  "Velocity"    -> {0., 0., 0.0}];
 
 (* -- Floor and boundary -- *)
 floorHalf = rN + 0.25;
