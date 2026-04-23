@@ -1,6 +1,6 @@
-# DaltonBoard
+# GaltonBoard
 
-A physically simulated Galton (a.k.a. "Dalton") Board built in the Wolfram Language
+A physically simulated Galton Board built in the Wolfram Language
 using [Arnoud Buzing's PhysicsModelLink paclet](https://www.wolframcloud.com/obj/arnoudbuzing/DeployedResources/Paclet/ArnoudBuzing/PhysicsModelLink/).
 
 Balls fall under gravity through a triangular grid of fixed pegs, ricochet randomly,

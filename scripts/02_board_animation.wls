@@ -21,29 +21,29 @@ DestroyPhysicsModel = ArnoudBuzing`PhysicsModelLink`DestroyPhysicsModel;
 nBalls   = 15;
 dzStack  = 1.20;
 balls = Table[
-  DaltonBoard`MakeBall[
+  GaltonBoard`MakeBall[
     {RandomReal[{-0.003, 0.003}],            (* x offset *)
-     DaltonBoard`$BoardTopZ + 1.2 + k*dzStack}, (* z stack *)
+     GaltonBoard`$BoardTopZ + 1.2 + k*dzStack}, (* z stack *)
     {RandomReal[{-0.02, 0.02}], 0.},            (* small initial vx *)
     Hue[Mod[k*0.11, 1]]],
   {k, 0, nBalls - 1}];
 
-pegs   = DaltonBoard`PegList[];
-bins   = DaltonBoard`BinSeparators[];
+pegs   = GaltonBoard`PegList[];
+bins   = GaltonBoard`BinSeparators[];
 floor  = ArnoudBuzing`PhysicsModelLink`FixedBody[{GrayLevel[0.85],
-           Cuboid[{-DaltonBoard`$BoardHalfWidth, -DaltonBoard`$SlabHalfY,
-                   DaltonBoard`$BoardBottomZ},
-                  { DaltonBoard`$BoardHalfWidth,  DaltonBoard`$SlabHalfY,
-                   DaltonBoard`$BoardBottomZ + 0.15}]},
+           Cuboid[{-GaltonBoard`$BoardHalfWidth, -GaltonBoard`$SlabHalfY,
+                   GaltonBoard`$BoardBottomZ},
+                  { GaltonBoard`$BoardHalfWidth,  GaltonBoard`$SlabHalfY,
+                   GaltonBoard`$BoardBottomZ + 0.15}]},
            "Restitution" -> 0.15, "Friction" -> 0.6];
 (* Place the ceiling well above the highest ball so nothing gets trapped. *)
-stackTop = DaltonBoard`$BoardTopZ + 1.2 + (nBalls - 1) * dzStack + 1.0;
-walls    = DaltonBoard`BoundaryWalls[stackTop];
+stackTop = GaltonBoard`$BoardTopZ + 1.2 + (nBalls - 1) * dzStack + 1.0;
+walls    = GaltonBoard`BoundaryWalls[stackTop];
 
 model = CreatePhysicsModel[
   Join[balls, pegs, bins, {floor}, walls],
   "Gravity" -> {0., 0., -9.81},
-  "Graphics3DOptions" -> DaltonBoard`DefaultGraphics3DOpts[]];
+  "Graphics3DOptions" -> GaltonBoard`DefaultGraphics3DOpts[]];
 
 Print["model: ", nBalls, " balls, ", Length[pegs], " pegs, ",
       Length[bins], " bin separators, + floor + 6 walls."];
@@ -73,11 +73,11 @@ Print["exported final still ", stillPath];
 dynBodies = Select[frames[[-1]][[1]]["Bodies"], #["BodyType"] === "Dynamic" &];
 xs        = #["Position"][[1]] & /@ dynBodies;
 zs        = #["Position"][[3]] & /@ dynBodies;
-settled   = Pick[xs, # < DaltonBoard`$BinTopZ & /@ zs];
+settled   = Pick[xs, # < GaltonBoard`$BinTopZ & /@ zs];
 Print["settled balls: ", Length[settled], " / ", Length[dynBodies]];
 If[Length[settled] > 0,
   Print["bin counts: ",
-    BinCounts[settled, {DaltonBoard`BinEdges[][[1]], DaltonBoard`BinEdges[][[-1]], DaltonBoard`$PegDx}]]];
+    BinCounts[settled, {GaltonBoard`BinEdges[][[1]], GaltonBoard`BinEdges[][[-1]], GaltonBoard`$PegDx}]]];
 
 DestroyPhysicsModel[model];
 Print["done."];

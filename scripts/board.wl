@@ -1,9 +1,9 @@
 (* ::Package:: *)
 
-(* board.wl -- shared Galton / Dalton Board geometry used by the animation
+(* board.wl -- shared Galton Board geometry used by the animation
    and histogram scripts. Load with Get["scripts/board.wl"] or by Needs. *)
 
-BeginPackage["DaltonBoard`", {"ArnoudBuzing`PhysicsModelLink`"}];
+BeginPackage["GaltonBoard`", {"ArnoudBuzing`PhysicsModelLink`"}];
 
 (* -- Board dimensions (metres) -- *)
 $PegRows::usage    = "$PegRows = number of peg rows (top row has 1 peg).";

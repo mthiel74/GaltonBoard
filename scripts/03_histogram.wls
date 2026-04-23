@@ -16,21 +16,21 @@ RapierSetBodyVelocity = ArnoudBuzing`PhysicsModelLink`RapierSetBodyVelocity;
 
 SeedRandom[20260423];
 
-nTrials = ToExpression @ Environment["DBOARD_TRIALS"] /. $Failed | Null -> 500;
+nTrials = ToExpression @ Environment["GBOARD_TRIALS"] /. $Failed | Null -> 500;
 Print["running ", nTrials, " independent trials..."];
 
-bins = DaltonBoard`BinSeparators[];
+bins = GaltonBoard`BinSeparators[];
 floor = FixedBody[{GrayLevel[0.85],
-           Cuboid[{-DaltonBoard`$BoardHalfWidth, -DaltonBoard`$SlabHalfY,
-                   DaltonBoard`$BoardBottomZ},
-                  { DaltonBoard`$BoardHalfWidth,  DaltonBoard`$SlabHalfY,
-                   DaltonBoard`$BoardBottomZ + 0.15}]},
+           Cuboid[{-GaltonBoard`$BoardHalfWidth, -GaltonBoard`$SlabHalfY,
+                   GaltonBoard`$BoardBottomZ},
+                  { GaltonBoard`$BoardHalfWidth,  GaltonBoard`$SlabHalfY,
+                   GaltonBoard`$BoardBottomZ + 0.15}]},
            "Restitution" -> 0.05, "Friction" -> 1.0];
-walls = DaltonBoard`BoundaryWalls[DaltonBoard`$BoardTopZ + 2.5];
+walls = GaltonBoard`BoundaryWalls[GaltonBoard`$BoardTopZ + 2.5];
 
 dt          = 1/240.;  (* finer dt than the animation to prevent tunneling *)
 maxSteps    = 3000;    (* up to 12.5 s per ball *)
-settleZ     = DaltonBoard`$BinTopZ;
+settleZ     = GaltonBoard`$BinTopZ;
 pegJitter   = 0.06;    (* per-trial random x perturbation of each peg (~peg radius/2) *)
 
 (* After each peg-row crossing, damp the ball's lateral (x, y) velocity so
@@ -50,8 +50,8 @@ runOne[seed_Integer] := Module[
   SeedRandom[seed];
   ballX0   = 0.;
   ballVx0  = 0.;
-  ball = DaltonBoard`MakeBall[
-           {ballX0, DaltonBoard`$BoardTopZ + 0.05},
+  ball = GaltonBoard`MakeBall[
+           {ballX0, GaltonBoard`$BoardTopZ + 0.05},
            {ballVx0, 0.},
            RGBColor[0.85, 0.2, 0.2]];
   model   = CreatePhysicsModel[
@@ -65,14 +65,14 @@ runOne[seed_Integer] := Module[
   (* One ±dx/(2 * dt_row) impulse per virtual row-crossing. Between rows the
      ball is in free-fall, so vx we impose + vz from gravity carry it
      exactly to the next peg column. *)
-  rowDt  = Sqrt[2 * DaltonBoard`$PegDz / 9.81];
-  rowVx  = DaltonBoard`$PegDx / (2 * rowDt);
+  rowDt  = Sqrt[2 * GaltonBoard`$PegDz / 9.81];
+  rowVx  = GaltonBoard`$PegDx / (2 * rowDt);
   While[nsteps < maxSteps,
     current = PhysicsModelIterate[current, 8, dt];
     nsteps += 8;
     pos = current[[1]]["Bodies"][[1]]["Position"];
-    While[rowIdx < DaltonBoard`$PegRows &&
-          pos[[3]] < -rowIdx * DaltonBoard`$PegDz + 0.01,
+    While[rowIdx < GaltonBoard`$PegRows &&
+          pos[[3]] < -rowIdx * GaltonBoard`$PegDz + 0.01,
       RapierSetBodyVelocity[worldId, bodyId,
         {RandomChoice[{-1., 1.}] * rowVx, 0., 0.}];  (* vz=0: reset vertical so per-row fall time is consistent *)
       rowIdx++;
@@ -82,7 +82,7 @@ runOne[seed_Integer] := Module[
   pos = current[[1]]["Bodies"][[1]]["Position"];
   DestroyPhysicsModel[model];
   <|"Seed" -> seed, "FinalX" -> pos[[1]], "FinalZ" -> pos[[3]],
-    "Bin" -> DaltonBoard`BinIndex[pos[[1]]], "Steps" -> nsteps|>];
+    "Bin" -> GaltonBoard`BinIndex[pos[[1]]], "Steps" -> nsteps|>];
 
 t0 = AbsoluteTime[];
 results = Table[
@@ -92,11 +92,11 @@ results = Table[
   {k, 1, nTrials}];
 Print["all ", nTrials, " trials done in ", Round[AbsoluteTime[] - t0, 0.1], " s."];
 
-bins11 = Table[Count[results, KeyValuePattern["Bin" -> b]], {b, 1, DaltonBoard`$PegRows + 1}];
+bins11 = Table[Count[results, KeyValuePattern["Bin" -> b]], {b, 1, GaltonBoard`$PegRows + 1}];
 Print["empirical bin counts (", Total[bins11], " balls): ", bins11];
 
 (* Theoretical: Binomial(N=PegRows, 1/2) on k = 0..PegRows, bin k maps to bin (k+1) *)
-N0       = DaltonBoard`$PegRows;
+N0       = GaltonBoard`$PegRows;
 binomPMF = Table[Binomial[N0, k]/2.^N0, {k, 0, N0}];
 binomExp = binomPMF * nTrials;
 Print["binomial(", N0, ", 0.5) expected counts: ", NumberForm[#, {5, 1}] & /@ binomExp];
@@ -109,7 +109,7 @@ Print["p-value (larger = better fit) = ",
       NumberForm[SurvivalFunction[ChiSquareDistribution[dof], chi2], {5, 3}]];
 
 (* Plot: empirical histogram vs binomial PMF (scaled) vs Normal curve *)
-centers = DaltonBoard`BinCenters[];
+centers = GaltonBoard`BinCenters[];
 empDensity = bins11 / N[nTrials];
 empBars = BarChart[empDensity,
           ChartLabels -> Placed[Range[Length[empDensity]], Axis],
