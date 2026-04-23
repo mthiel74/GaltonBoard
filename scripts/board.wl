@@ -39,13 +39,18 @@ $BinTopZ::usage        = "z at which bin separators start.";
 $BoardTopZ       = 0.0;
 $BoardBottomZ    = -($PegRows - 1)*$PegDz - 3.0;    (* bin depth ~3 m below last peg row *)
 $BinTopZ         = -($PegRows - 1)*$PegDz - 0.4;
-(* Walls well outside the peg array: outermost even-row peg is at
-   ($PegCols-1)/2 * dx; add room for the ball to sit between peg and
-   wall without wedging.  Also aligns with the outer bin edges. *)
-$BoardHalfWidth  = ($PegRows + 1)/2.0 * $PegDx;
+(* Walls flush with the outermost bin edges ($NBins/2 * dx).  The peg
+   array is narrower than the bin array so the outermost peg is well
+   inside the wall (peg-to-wall gap = 1-1.5 * dx > ball diameter). *)
+$BoardHalfWidth  = $NBins/2.0 * $PegDx;
 
 $PegCols::usage = "$PegCols = number of peg columns in even rows (odd rows carry $PegCols - 1 pegs offset by $PegDx/2 so both rows are symmetric about x=0 and the lattice is classical alternating-offset hexagonal).";
-$PegCols = 17;   (* odd, so even rows are symmetric about 0 *)
+$PegCols = 23;   (* odd: 23 pegs in even rows, 22 in odd rows, wider than bin
+                    array so balls can't drift off the side of the peg grid
+                    and land in an extreme bin by default. *)
+
+$NBins::usage = "$NBins = number of bins at the bottom. Odd so that bins are symmetric about x=0. Larger than $PegRows+1 and wider than the peg array's x-extent so that no ball is forced into an extreme bin just by falling off the edge of the peg grid.";
+$NBins = 25;
 
 PegList::usage = "PegList[] returns the (pristine) rectangular peg grid.  PegList[jitter] returns the same grid with each peg's x-coordinate perturbed uniformly in [-jitter, jitter]; call with a fresh RandomReal seed per simulation to generate trial-to-trial variation.";
 PegList[] := PegList[0.0];
@@ -71,10 +76,10 @@ PegList[jitter_?NumericQ] := Module[{row, j, xj, x, pegs = {}, nPegs, firstX},
     {row, 0, $PegRows - 1}];
   pegs];
 
-BinSeparators::usage = "BinSeparators[] returns FixedBody thin vertical walls that separate the collection bins. Separators sit directly below the row-N-1 pegs so bins lie in the gaps between bottom pegs, giving $PegRows+1 bins (including 2 outer overflow regions).";
+BinSeparators::usage = "BinSeparators[] returns FixedBody thin vertical walls that partition the floor into $NBins collection bins of width $PegDx.";
 BinSeparators[] := Module[{xs, walls = {}, dxHalf = 0.02},
-  (* Separators align with row N-1 pegs at x = (j - (N-1)/2)*dx, j = 0..N-1 *)
-  xs = Table[(j - ($PegRows - 1)/2.0) * $PegDx, {j, 0, $PegRows - 1}];
+  (* $NBins-1 interior separators at x = (k - $NBins/2)*dx, k=1..$NBins-1, symmetric about 0 *)
+  xs = Table[(k - $NBins/2.0) * $PegDx, {k, 1, $NBins - 1}];
   Do[
     AppendTo[walls,
       FixedBody[{GrayLevel[0.55],
@@ -114,18 +119,15 @@ DefaultGraphics3DOpts[] := {
   ImageSize -> {900, 900},
   Background -> RGBColor[0.97, 0.97, 1.0]};
 
-BinIndex::usage = "BinIndex[x] returns 1..$PegRows+1 telling which bin an x-coordinate falls into (clamped to the ends). Bin k is centered at x = (k - 1 - $PegRows/2)*$PegDx.";
+BinIndex::usage = "BinIndex[x] returns 1..$NBins telling which bin an x-coordinate falls into (clamped to the ends). Bin k is centered at x = (k - ($NBins+1)/2)*$PegDx.";
 BinIndex[x_?NumericQ] := Module[{k},
-  (* bin centers at (k - 1 - PegRows/2)*dx for k=1..PegRows+1;
-     bin boundaries at (j - PegRows/2 - 0.5)*dx for j=0..PegRows+1;
-     equivalently: shift by (PegRows/2 + 0.5)*dx, divide by dx, floor, +1 *)
-  k = Floor[(x + ($PegRows/2.0 + 0.5)*$PegDx)/$PegDx] + 1;
-  Clip[k, {1, $PegRows + 1}]];
+  k = Floor[(x + $NBins/2.0 * $PegDx)/$PegDx] + 1;
+  Clip[k, {1, $NBins}]];
 
-BinCenters::usage = "BinCenters[] returns the list of ($PegRows + 1) bin-center x-coordinates.";
-BinCenters[] := Table[(k - 1 - $PegRows/2.0) * $PegDx, {k, 1, $PegRows + 1}];
+BinCenters::usage = "BinCenters[] returns the list of $NBins bin-center x-coordinates.";
+BinCenters[] := Table[(k - ($NBins + 1)/2.0) * $PegDx, {k, 1, $NBins}];
 
-BinEdges::usage = "BinEdges[] returns the ($PegRows + 2) bin-edge x-coordinates for BinCounts.";
-BinEdges[] := Table[(j - ($PegRows + 1)/2.0) * $PegDx, {j, 0, $PegRows + 1}];
+BinEdges::usage = "BinEdges[] returns the $NBins+1 bin-edge x-coordinates for BinCounts.";
+BinEdges[] := Table[(j - $NBins/2.0) * $PegDx, {j, 0, $NBins}];
 
 EndPackage[];

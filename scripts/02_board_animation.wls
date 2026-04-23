@@ -39,14 +39,14 @@ RapierGetBodyPositions = ArnoudBuzing`PhysicsModelLink`RapierGetBodyPositions;
 RapierSetBodyVelocity = ArnoudBuzing`PhysicsModelLink`RapierSetBodyVelocity;
 
 (* -- Parameters -- *)
-nBalls    = 25;
+nBalls    = 400;             (* many balls -> clear bell curve pile-up *)
 xReleaseSpread = GaltonBoard`$PegDx/6;
-dzStack   = 1.50;            (* LARGE spacing: each ball has time to reach the bins
-                                before the next one enters the peg array, so they
-                                cascade independently (minimal ball-ball collisions) *)
+dzStack   = 0.50;            (* spacing in the ball stack; with damping the balls
+                                reach a terminal velocity ~16 m/s so successive
+                                balls arrive at the top peg ~0.03 s apart *)
 dt        = 1/240.;
-nFrames   = 12000;           (* 50 s of physics -- enough for all 25 balls to cascade *)
-videoStep = 30;              (* 400 frames @ 30fps = 13 s playback *)
+nFrames   = 14400;           (* 60 s of physics -- all 400 balls fully settled *)
+videoStep = 36;              (* 400 frames @ 30 fps = 13 s playback *)
 damping   = 0.99;            (* same drag as the histogram script *)
 dampEvery = 4;
 damping   = 0.99;            (* velocity kept per-damp-step *)
@@ -145,7 +145,7 @@ settled   = Pick[finalXs, # < GaltonBoard`$BinTopZ & /@ finalZs];
 Print["settled balls: ", Length[settled], " / ", Length[dynBodies]];
 If[Length[settled] > 0,
   binsCount = Table[
-    Count[GaltonBoard`BinIndex /@ settled, b], {b, 1, GaltonBoard`$PegRows + 1}];
+    Count[GaltonBoard`BinIndex /@ settled, b], {b, 1, GaltonBoard`$NBins}];
   Print["bin counts: ", binsCount]];
 
 DestroyPhysicsModel[model];
