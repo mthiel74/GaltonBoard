@@ -27,7 +27,10 @@ bHalfX = 0.18;
 bHalfY = 0.14;
 bHeight = 0.55;
 bWallThk = 0.015;
-pivotPoint = {0.6, 0., 0.};     (* beaker tips about this world point *)
+(* Pivot raised to 0.70 m: at 125 deg tilt the lowest rotated
+   beaker corner is still well above the floor, so the beaker
+   doesn't sink into the table as it tips. *)
+pivotPoint = {0.7, 0., 0.70};
 
 (* -- Build the beaker walls given a tilt angle (radians).  Returns a
    list of FixedBody walls in world frame. -- *)
@@ -73,11 +76,11 @@ initialBallPos = (rot0 . # + pivotPoint) & /@ localBallPos;
 
 (* -- Floor the water pours onto -- *)
 floor = FixedBody[{GrayLevel[0.92],
-  Cuboid[{-0.2, -0.35, -0.06}, {2.0, 0.35, -0.02}]},
+  Cuboid[{-0.2, -0.35, -0.06}, {2.2, 0.35, -0.02}]},
   "Restitution" -> 0.05, "Friction" -> 0.5];
 
 bbox = PhysicsBoundaryBox[{
-  {-0.3, -0.4, -0.08}, {2.1, 0.4, 1.2}},
+  {-0.3, -0.4, -0.08}, {2.3, 0.4, 1.7}},
   "Thickness" -> 0.3];
 
 (* -- Stitched-simulation controller -- *)
@@ -111,10 +114,10 @@ Do[
       Join[walls, {floor}, ballBodies, bbox],
       "Gravity" -> {0., 0., -9.81},
       "Graphics3DOptions" -> {
-        PlotRange    -> {{-0.1, 2.0}, {-0.3, 0.3}, {-0.05, 0.9}},
+        PlotRange    -> {{-0.1, 2.2}, {-0.3, 0.3}, {-0.05, 1.6}},
         Boxed        -> False, Axes -> False,
         Lighting     -> "Neutral",
-        ViewPoint    -> {0.8, -3.8, 0.5},
+        ViewPoint    -> {0.8, -4.0, 0.6},
         ViewVertical -> {0, 0, 1},
         Background   -> RGBColor[0.97, 0.97, 1.0]}];
 
