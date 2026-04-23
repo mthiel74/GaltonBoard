@@ -21,15 +21,14 @@ $SlabHalfY::usage  = "$SlabHalfY = half-thickness of the slab in the Y direction
    without touching a peg.  Hexagonal vertical spacing dz = dx*sqrt(3)/2
    for a close-packed triangular lattice. *)
 $PegRows    = 18;
-$PegRadius  = 0.025;
-$BallRadius = 0.080;
-(* dx = 0.22 > 2*contact_dist = 2*(ball_r + peg_r) = 0.21, so a ball hits
-   exactly ONE peg per row (adjacent peg's contact zones don't overlap).
-   This is critical: overlapping zones cause a ball near a mid-line to
-   touch both adjacent pegs at once, canceling its stochastic deflection. *)
-$PegDx      = 0.22;
-$PegDz      = 0.22;
-$SlabHalfY  = 0.14;
+$PegRadius  = 0.035;             (* slightly bigger: ensures contact even with small jitter *)
+$BallRadius = 0.075;             (* ball dia 0.15 *)
+(* Same-row peg-edge gap = dx - 2*peg_r = 0.24 - 0.07 = 0.17
+    = ball_dia + 0.02 m margin -- wide enough that small peg jitter
+   can't close it below the ball diameter. *)
+$PegDx      = 0.24;
+$PegDz      = 0.21;              (* slightly less than dx so adjacent-row gap also fits *)
+$SlabHalfY  = 0.13;
 
 (* -- Derived -- *)
 $BoardHalfWidth::usage = "half the horizontal extent of the bounding box.";
@@ -40,25 +39,35 @@ $BinTopZ::usage        = "z at which bin separators start.";
 $BoardTopZ       = 0.0;
 $BoardBottomZ    = -($PegRows - 1)*$PegDz - 3.0;    (* bin depth ~3 m below last peg row *)
 $BinTopZ         = -($PegRows - 1)*$PegDz - 0.4;
-$BoardHalfWidth  = ($PegRows + 1)/2. * $PegDx;      (* walls flush with outermost bin edges *)
+(* Walls well outside the peg array: outermost even-row peg is at
+   ($PegCols-1)/2 * dx; add room for the ball to sit between peg and
+   wall without wedging.  Also aligns with the outer bin edges. *)
+$BoardHalfWidth  = ($PegRows + 1)/2.0 * $PegDx;
 
-$PegCols::usage = "$PegCols = number of peg columns. Each row has $PegCols pegs; odd rows are offset by $PegDx/2 so the lattice is hexagonal alternating-offset, which is the classical Galton geometry. Rectangular (not triangular) ensures balls cannot escape the array laterally.";
-$PegCols = 19;  (* odd so the array is symmetric about x=0 *)
+$PegCols::usage = "$PegCols = number of peg columns in even rows (odd rows carry $PegCols - 1 pegs offset by $PegDx/2 so both rows are symmetric about x=0 and the lattice is classical alternating-offset hexagonal).";
+$PegCols = 17;   (* odd, so even rows are symmetric about 0 *)
 
-PegList::usage = "PegList[] returns the (pristine) rectangular peg grid.  PegList[jitter] returns the same grid but with each peg's x-coordinate perturbed uniformly in [-jitter, jitter]; use a fresh RandomReal seed per call to generate trial-to-trial variation.";
+PegList::usage = "PegList[] returns the (pristine) rectangular peg grid.  PegList[jitter] returns the same grid with each peg's x-coordinate perturbed uniformly in [-jitter, jitter]; call with a fresh RandomReal seed per simulation to generate trial-to-trial variation.";
 PegList[] := PegList[0.0];
-PegList[jitter_?NumericQ] := Module[{row, j, offset, xj, x, pegs = {}},
+PegList[jitter_?NumericQ] := Module[{row, j, xj, x, pegs = {}, nPegs, firstX},
   Do[
-    offset = If[OddQ[row], $PegDx/2, 0.];
+    If[OddQ[row],
+      (* odd row: one FEWER peg, offset so the row is symmetric about 0 *)
+      nPegs  = $PegCols - 1;
+      firstX = -(($PegCols - 2)/2.0) * $PegDx,
+      (* even row *)
+      nPegs  = $PegCols;
+      firstX = -(($PegCols - 1)/2.0) * $PegDx
+    ];
     Do[
-      x  = (j - ($PegCols - 1)/2.0) * $PegDx + offset;
+      x  = firstX + j * $PegDx;
       xj = x + If[jitter > 0, RandomReal[{-jitter, jitter}], 0.];
       AppendTo[pegs,
         FixedBody[{GrayLevel[0.35],
           Cylinder[{{xj, -$SlabHalfY, -row*$PegDz},
                     {xj,  $SlabHalfY, -row*$PegDz}}, $PegRadius]},
           "Restitution" -> 0.5, "Friction" -> 0.0]],
-      {j, 0, $PegCols - 1}],
+      {j, 0, nPegs - 1}],
     {row, 0, $PegRows - 1}];
   pegs];
 

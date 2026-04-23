@@ -39,17 +39,17 @@ RapierGetBodyPositions = ArnoudBuzing`PhysicsModelLink`RapierGetBodyPositions;
 RapierSetBodyVelocity = ArnoudBuzing`PhysicsModelLink`RapierSetBodyVelocity;
 
 (* -- Parameters -- *)
-nBalls    = 30;
-xReleaseSpread = GaltonBoard`$PegDx;
+nBalls    = 80;
+xReleaseSpread = GaltonBoard`$PegDx/4;  (* narrow -> cleaner bell centred on middle bin *)
 dzStack   = 0.22;
 dt        = 1/240.;
-nFrames   = 6000;            (* 25 s of physics *)
-videoStep = 15;              (* 400 frames @ 30fps = 13 s playback *)
+nFrames   = 9600;            (* 40 s of physics *)
+videoStep = 24;              (* 400 frames @ 30fps = 13 s playback *)
 damping   = 0.99;            (* same drag as the histogram script *)
 dampEvery = 4;
 damping   = 0.99;            (* velocity kept per-damp-step *)
 dampEvery = 4;               (* physics steps per damping tick *)
-pegJitter = 0.025;           (* per-simulation random peg-x perturbation *)
+pegJitter = 0.004;           (* small: keeps peg-edge gap > ball diameter everywhere *)
 
 (* -- Balls: small x-spread, staggered z, random tiny vx -- *)
 balls = Table[
