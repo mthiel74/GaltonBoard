@@ -13,9 +13,10 @@ limit theorem — very well:
 
 ![empirical distribution vs Binomial vs Normal](output/03_histogram_overlay.png)
 
-A multi-ball animation shows balls cascading through the same physics setup
-(balls are released into a narrow funnel above the board, with enough
-vertical stack-spacing that they cascade mostly one-at-a-time):
+A multi-ball animation drops 600 balls (stacked vertically above a narrow
+funnel, so balls enter the peg array one after another) through an 18-row
+cascade of 31-column rectangular peg grid, into 33 deep collection bins.
+The piled balls form the expected bell curve:
 
 ![final frame of the animation](output/02_board_final.png)
 

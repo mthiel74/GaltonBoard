@@ -37,7 +37,7 @@ $BoardBottomZ::usage   = "z of the bin floor.";
 $BinTopZ::usage        = "z at which bin separators start.";
 
 $BoardTopZ       = 0.0;
-$BoardBottomZ    = -($PegRows - 1)*$PegDz - 3.0;    (* bin depth ~3 m below last peg row *)
+$BoardBottomZ    = -($PegRows - 1)*$PegDz - 5.0;    (* bin depth ~5 m: deep slots for many balls *)
 $BinTopZ         = -($PegRows - 1)*$PegDz - 0.4;
 (* Walls flush with the outermost bin edges ($NBins/2 * dx).  The peg
    array is narrower than the bin array so the outermost peg is well
@@ -45,12 +45,12 @@ $BinTopZ         = -($PegRows - 1)*$PegDz - 0.4;
 $BoardHalfWidth  = $NBins/2.0 * $PegDx;
 
 $PegCols::usage = "$PegCols = number of peg columns in even rows (odd rows carry $PegCols - 1 pegs offset by $PegDx/2 so both rows are symmetric about x=0 and the lattice is classical alternating-offset hexagonal).";
-$PegCols = 23;   (* odd: 23 pegs in even rows, 22 in odd rows, wider than bin
-                    array so balls can't drift off the side of the peg grid
-                    and land in an extreme bin by default. *)
+$PegCols = 31;   (* odd: 31 pegs in even rows, 30 in odd rows, wide enough
+                    to cover >5-sigma of the Binomial(18, 1/2) distribution
+                    so extreme bins are statistically empty. *)
 
 $NBins::usage = "$NBins = number of bins at the bottom. Odd so that bins are symmetric about x=0. Larger than $PegRows+1 and wider than the peg array's x-extent so that no ball is forced into an extreme bin just by falling off the edge of the peg grid.";
-$NBins = 25;
+$NBins = 33;
 
 PegList::usage = "PegList[] returns the (pristine) rectangular peg grid.  PegList[jitter] returns the same grid with each peg's x-coordinate perturbed uniformly in [-jitter, jitter]; call with a fresh RandomReal seed per simulation to generate trial-to-trial variation.";
 PegList[] := PegList[0.0];

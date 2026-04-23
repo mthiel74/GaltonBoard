@@ -39,7 +39,7 @@ RapierGetBodyPositions = ArnoudBuzing`PhysicsModelLink`RapierGetBodyPositions;
 RapierSetBodyVelocity = ArnoudBuzing`PhysicsModelLink`RapierSetBodyVelocity;
 
 (* -- Parameters -- *)
-nBalls    = 400;             (* many balls -> clear bell curve pile-up *)
+nBalls    = 600;             (* many balls -> clear bell curve pile-up *)
 xReleaseSpread = GaltonBoard`$PegDx/6;
 dzStack   = 0.50;            (* spacing in the ball stack; with damping the balls
                                 reach a terminal velocity ~16 m/s so successive
