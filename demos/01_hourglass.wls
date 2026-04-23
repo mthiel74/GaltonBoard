@@ -21,14 +21,16 @@ PhysicsBoundaryBox = ArnoudBuzing`PhysicsModelLink`PhysicsBoundaryBox;
 
 SeedRandom[1];
 
-(* -- Geometry: an iconic sand-timer silhouette.  The ratio
-   outerR/halfH is large so the slant angle is ~52 deg from
-   vertical, giving the classic hourglass look. *)
-outerR    = 0.80;    (* outer radius at the widest points *)
-aperture  = 0.05;    (* narrow middle *)
-halfH     = 0.65;    (* half-height -> outerR/halfH = 1.23 -> ~52 deg slant *)
-wallThk   = 0.05;    (* thick walls -> clearly visible *)
+(* -- Geometry: a proper sand-timer with a STRAIGHT NECK.
+   Balls flow through a short vertical channel in the middle. *)
+outerR    = 0.80;    (* outer radius at top and bottom *)
+neckR     = 0.05;    (* neck half-width *)
+neckHalf  = 0.15;    (* HALF-height of the straight neck section *)
+funnelH   = 0.55;    (* HALF-height of each funnel above/below the neck *)
+wallThk   = 0.04;
 slabY     = 0.05;
+
+halfH     = neckHalf + funnelH;     (* overall half-height *)
 
 ballR     = 0.022;
 nBalls    = 600;
@@ -36,28 +38,39 @@ nBalls    = 600;
 wallLen   = Sqrt[(outerR - aperture)^2 + halfH^2];
 wallAngle = ArcTan[(outerR - aperture)/halfH];
 
-(* -- Helper to build a slanted wall between two points in the XZ plane -- *)
-slantWall[{xA_, zA_}, {xB_, zB_}] :=
-  Module[{cx, cz, L, theta},
-    cx = (xA + xB)/2;
-    cz = (zA + zB)/2;
-    L  = Sqrt[(xB - xA)^2 + (zB - zA)^2];
-    (* rotation about Y: +Z local axis -> direction vector from A to B *)
-    theta = ArcTan2[zB - zA, xB - xA] - Pi/2;
-    (* Correction: local +Z initially, we want new direction = (xB-xA, 0, zB-zA)/L.
-       So rotation by angle alpha where {sin alpha, 0, cos alpha} = direction.
-       alpha = ArcTan2[cos, sin] = ArcTan2[(zB-zA)/L, (xB-xA)/L].  *)
-    theta = -ArcTan2[zB - zA, xB - xA] + Pi/2;
-    FixedBody[{RGBColor[0.25, 0.18, 0.12],     (* darker walls -> clearly visible *)
-      Cuboid[{cx - wallThk, -slabY, cz - L/2},
-             {cx + wallThk,  slabY, cz + L/2}]},
-      "Orientation" -> RotationMatrix[theta, {0, 1, 0}],
-      "Restitution" -> 0.1, "Friction" -> 0.8]];
+(* -- Slanted wall between two XZ points: one rotated Cuboid.  The
+   cuboid's local +Z axis is rotated to align with the slant
+   direction so balls roll along a single flat surface (no stair
+   steps). *)
+slantWall[{xA_, zA_}, {xB_, zB_}] := Module[
+  {cx, cz, L, theta},
+  cx = (xA + xB)/2;
+  cz = (zA + zB)/2;
+  L  = Sqrt[(xB - xA)^2 + (zB - zA)^2];
+  (* rotation about Y so local +Z maps to (xB-xA, 0, zB-zA)/L *)
+  theta = -ArcTan2[zB - zA, xB - xA] + Pi/2;
+  {FixedBody[{RGBColor[0.25, 0.18, 0.12],
+    Cuboid[{cx - wallThk, -slabY, cz - L/2},
+           {cx + wallThk,  slabY, cz + L/2}]},
+    "Orientation" -> RotationMatrix[theta, {0, 1, 0}],
+    "Restitution" -> 0.15, "Friction" -> 0.7]}];
 
-topRight    = slantWall[{aperture, 0}, {+outerR,  halfH}];
-topLeft     = slantWall[{-aperture, 0}, {-outerR,  halfH}];
-bottomRight = slantWall[{aperture, 0}, {+outerR, -halfH}];
-bottomLeft  = slantWall[{-aperture, 0}, {-outerR, -halfH}];
+(* Four slanted walls (each a short stack of axis-aligned
+   mini-cuboids along the slant direction) + two vertical neck walls. *)
+topRight    = slantWall[{neckR,  neckHalf}, {+outerR,  halfH}];
+topLeft     = slantWall[{-neckR, neckHalf}, {-outerR,  halfH}];
+bottomRight = slantWall[{neckR, -neckHalf}, {+outerR, -halfH}];
+bottomLeft  = slantWall[{-neckR,-neckHalf}, {-outerR, -halfH}];
+slantWalls  = Join[topRight, topLeft, bottomRight, bottomLeft];
+(* Straight vertical neck walls: pass-through channel. *)
+neckRight = FixedBody[{RGBColor[0.25, 0.18, 0.12],
+  Cuboid[{neckR - wallThk, -slabY, -neckHalf},
+         {neckR + wallThk,  slabY,  neckHalf}]},
+  "Restitution" -> 0.1, "Friction" -> 0.8];
+neckLeft  = FixedBody[{RGBColor[0.25, 0.18, 0.12],
+  Cuboid[{-neckR - wallThk, -slabY, -neckHalf},
+         {-neckR + wallThk,  slabY,  neckHalf}]},
+  "Restitution" -> 0.1, "Friction" -> 0.8];
 
 (* -- Top and bottom "caps" closing off the funnels -- *)
 capThk  = 0.04;
@@ -78,15 +91,17 @@ sideR = FixedBody[{Opacity[0.15], GrayLevel[0.4],
          { outerR + capThk,   slabY + 0.005,  halfH + capThk}]},
   "Restitution" -> 0.1, "Friction" -> 0.4];
 
-(* -- Sand: grid-pack the upper funnel, reject points outside the walls -- *)
+(* -- Sand: grid-pack the upper funnel (above the neck), reject
+   points outside the slanted walls. -- *)
 step     = 2.1 * ballR;
 sandPos  = Flatten[
   Table[
-    With[{wallX = aperture + (outerR - aperture) * z / halfH},
+    With[{wallX = neckR + (outerR - neckR) * (z - neckHalf) / funnelH},
       Table[
-        If[Abs[x] < wallX - 1.2 ballR, {x, 0., z}, Nothing],
+        If[neckHalf + 1.2 ballR < z < halfH - 2 ballR &&
+           Abs[x] < wallX - 1.2 ballR, {x, 0., z}, Nothing],
         {x, -outerR + ballR, outerR - ballR, step}]],
-    {z, 0.03, halfH - 2 ballR, step}],
+    {z, neckHalf + 0.02, halfH - 2 ballR, step}],
   1];
 sandPos = RandomSample[sandPos, UpTo[nBalls]];
 actualN = Length[sandPos];
@@ -105,7 +120,7 @@ bbox = PhysicsBoundaryBox[{
   { outerR + 0.03,  slabY + 0.01,  halfH + 0.05}}];
 
 model = CreatePhysicsModel[
-  Join[{topRight, topLeft, bottomRight, bottomLeft, topCap, botCap, sideL, sideR}, sand, bbox],
+  Join[slantWalls, {neckRight, neckLeft, topCap, botCap, sideL, sideR}, sand, bbox],
   "Gravity" -> {0., 0., -9.81},
   "Graphics3DOptions" -> {
     PlotRange    -> {{-outerR - 0.15, outerR + 0.15},
@@ -130,12 +145,14 @@ mp4Path  = FileNameJoin[{outDir, "01_hourglass.mp4"}];
 gifPath  = FileNameJoin[{outDir, "01_hourglass.gif"}];
 stillPath= FileNameJoin[{outDir, "01_hourglass_final.png"}];
 
+(* Square-ish render so the diagonal slant isn't compressed to look
+   vertical. *)
 GaltonBoardDemos`RenderVideo[frames, mp4Path,
-  "VideoStep" -> 12, "ImageSize" -> {540, 900}, "FrameRate" -> 30];
+  "VideoStep" -> 12, "ImageSize" -> {720, 720}, "FrameRate" -> 30];
 Print["wrote ", mp4Path];
 
-GaltonBoardDemos`MakeGif[mp4Path, gifPath, 420, 15];
+GaltonBoardDemos`MakeGif[mp4Path, gifPath, 540, 15];
 Print["wrote ", gifPath];
 
-Export[stillPath, PhysicsModelPlot[frames[[-1]]], ImageSize -> {540, 900}];
+Export[stillPath, PhysicsModelPlot[frames[[-1]]], ImageSize -> {720, 720}];
 Print["wrote ", stillPath];
